@@ -1,6 +1,7 @@
 import gradio as gr
 import cv2
 import os
+from YOLO import crop_images
 
 def submit_form(firstname, lastname, designation, office, video):
     if not video:
@@ -50,3 +51,4 @@ interface = gr.Interface(
 
 # Launch the interface
 interface.launch()
+crop_images()

@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 import os
 import cv2
+from detected import check_folders 
 def draw_bbox(frame, boxes, colors):
     for box in boxes:
         x1, y1, x2, y2 = box.xyxy[0]
@@ -31,27 +32,40 @@ def draw_bbox(frame, boxes, colors):
     return frame
 # sudo apt update
 # sudo apt install -y libgl1-mesa-glx libglib2.0-0
-model = YOLO('best.pt',verbose=False)
-video_folder_path = os.path.join(os.getcwd(), "videos")
-for office in os.listdir(video_folder_path):
-    office_path = os.path.join(video_folder_path, office)
-    for students in os.listdir(office_path):
-        student_folder = os.path.join(office_path, students)
-        for image_filename in os.listdir(student_folder):
-            if not image_filename.endswith((".jpg", ".jpeg", ".png")):
-                continue  # Skip non-image file
-            image_path = os.path.join(student_folder, image_filename)
-            frame = cv2.imread(image_path)
-            result = model(frame, conf=0.5)[0]
-            boxes = result.boxes
-            if boxes==None:
-                print("No face")
-            box = boxes[0]
-            x1, y1, x2, y2 = box.xyxy[0]
-            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-            width = x2 - x1
-            height = y2 - y1
-            cropped_image = frame[y1:y1+height, x1:x1+width]
-            cv2.imwrite(image_path, cropped_image)
+# sudo apt install ffmpeg
+def crop_images():
+    model = YOLO('best.pt',verbose=False)
+    d = check_folders()
+    print(d)
+    print("..............................")
+    video_folder_path = os.path.join(os.getcwd(), "videos")
+    for office in os.listdir(video_folder_path):
+        office_path = os.path.join(video_folder_path, office)
+        for students in os.listdir(office_path):
+            if d[office+"_"+students]==True:
+                continue
+            print(office+"_"+students)
+            student_folder = os.path.join(office_path, students)
+
+            for image_filename in os.listdir(student_folder):
+                if not image_filename.endswith((".jpg", ".jpeg", ".png")):
+                    continue  # Skip non-image file
+                image_path = os.path.join(student_folder, image_filename)
+                frame = cv2.imread(image_path)
+                result = model(frame, conf=0.5)[0]
+                boxes = result.boxes
+                if len(boxes)==0:
+                    continue
+
+                box = boxes[0]
+                x1, y1, x2, y2 = box.xyxy[0]
+                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                width = x2 - x1
+                height = y2 - y1
+                cropped_image = frame[y1:y1+height, x1:x1+width]
+                cv2.imwrite(image_path, cropped_image)
+            d[office+"_"+students]==True
+    with open("detected.json", "w") as f:
+        json.dump(d, f)
 
 
